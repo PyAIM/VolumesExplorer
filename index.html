@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volumes of Revolution Visualizer</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+
+        <div id="header-panel">
+            <h1>Exploring Volumes of Solids of Revolution</h1>
+            <div id="instructions">
+                <div id="instructions-header">
+                    <h3>How to Use</h3>
+                    <button id="instructions-toggle" title="Toggle instructions">−</button>
+                </div>
+                <div id="instructions-content">
+                    <ul>
+                        <li><strong>Select an example</strong> from the dropdown (top right)</li>
+                        <li><strong>Show Dimensions</strong> displays the sample rectangle with labeled r, h, Δx</li>
+                        <li><strong>Animate Rotation</strong> shows the rectangle rotating to form a slice</li>
+                        <li><strong>Show Sample Slice</strong> displays the 3D slice created by that rectangle</li>
+                        <li><strong>Show Slices</strong> displays all slices (Riemann sum)</li>
+                        <li><strong>Click "How is this integral formed?"</strong> for detailed breakdown</li>
+                    </ul>
+                    <h3>3D Controls</h3>
+                    <ul>
+                        <li><strong>Drag</strong> to rotate view</li>
+                        <li><strong>Scroll</strong> to zoom</li>
+                        <li><strong>Right-drag</strong> to pan</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="info-panel">
+            <div id="info-header" class="collapsed-header">
+                <h2>Volume Information</h2>
+                <button id="info-toggle" title="Show volume info">+</button>
+            </div>
+            <div id="info-content" class="collapsed">
+                <div id="formula"></div>
+                <div id="volume-display">
+                    <p>Approximate Volume: <span id="approx-volume">-</span></p>
+                    <p>Exact Volume: <span id="exact-volume">-</span></p>
+                </div>
+                <div id="example-description"></div>
+                <button id="explain-btn">How is this integral formed?</button>
+            </div>
+        </div>
+
+        <div id="copyright">© 2025 M. Ben-Azzouz</div>
+    </div>
+
+    <!-- Educational Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div id="modal" class="modal">
+            <div class="modal-header">
+                <h2>Understanding the Integral</h2>
+                <button id="modal-close" class="modal-close">&times;</button>
+            </div>
+            <div id="modal-content" class="modal-content">
+                <!-- Content populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <!-- lil-gui -->
+    <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19.2/dist/lil-gui.umd.min.js"></script>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
