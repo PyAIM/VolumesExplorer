@@ -177,7 +177,7 @@ class VolumesApp {
      * @param {Object} settings - Current settings from control panel
      */
     updateVisualization(settings) {
-        const { example, method, numSlices, showSolid, showSlices, showDimensions, showSampleSlice } = settings;
+        const { example, method, numSlices, showSolid, showSlices, showDimensions, showRegion, showSampleSlice } = settings;
 
         if (!example) return;
 
@@ -189,6 +189,7 @@ class VolumesApp {
             showSolid,
             showSlices,
             showDimensions,
+            showRegion,
             showSampleSlice
         };
 

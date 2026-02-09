@@ -14,6 +14,7 @@ export class DiskWasherVisualizer {
         this.sampleSlice = null;
         this.sampleRectGroup = null;
         this.sampleData = null; // Store data for animation
+        this.regionFill = null; // 2D region being rotated
     }
 
     /**
@@ -26,13 +27,18 @@ export class DiskWasherVisualizer {
 
         const { fn, interval, axisOffset } = example;
         const [a, b] = interval;
-        const { numSlices, showSolid, showSlices, showDimensions } = options;
+        const { numSlices, showSolid, showSlices, showDimensions, showRegion } = options;
 
         // Show the rotation axis
         this.sceneManager.showRotationAxis(example.axisOfRotation, axisOffset);
 
         // Create the 2D curve
         this.createCurve(fn, a, b, axisOffset);
+
+        // Create the transparent region fill (2D area being rotated)
+        if (showRegion) {
+            this.createDiskRegion(fn, a, b, axisOffset);
+        }
 
         // Create the solid of revolution
         if (showSolid) {
@@ -68,7 +74,7 @@ export class DiskWasherVisualizer {
 
         const { fn, fn2, interval, axisOffset } = example;
         const [a, b] = interval;
-        const { numSlices, showSolid, showSlices, showDimensions } = options;
+        const { numSlices, showSolid, showSlices, showDimensions, showRegion } = options;
 
         // Show the rotation axis
         this.sceneManager.showRotationAxis(example.axisOfRotation, axisOffset);
@@ -76,6 +82,11 @@ export class DiskWasherVisualizer {
         // Create both curves
         this.createCurve(fn, a, b, axisOffset, 0x00d9ff);
         this.createCurve(fn2, a, b, axisOffset, 0x00ff88);
+
+        // Create the transparent region fill (2D area being rotated)
+        if (showRegion) {
+            this.createWasherRegion(fn, fn2, a, b, axisOffset);
+        }
 
         // Create the solid
         if (showSolid) {
@@ -122,6 +133,79 @@ export class DiskWasherVisualizer {
 
         this.curveLines.push(curve);
         this.sceneManager.scene.add(curve);
+    }
+
+    /**
+     * Create a transparent 2D region fill for disk method (area under curve to axis)
+     */
+    createDiskRegion(fn, a, b, axisOffset) {
+        const shape = new THREE.Shape();
+        const steps = 100;
+        const dx = (b - a) / steps;
+
+        // Start at bottom-left (on axis)
+        shape.moveTo(a, axisOffset);
+
+        // Trace along the curve
+        for (let i = 0; i <= steps; i++) {
+            const x = a + i * dx;
+            const y = fn(x);
+            shape.lineTo(x, y);
+        }
+
+        // Close back to the axis
+        shape.lineTo(b, axisOffset);
+        shape.closePath();
+
+        const geometry = new THREE.ShapeGeometry(shape);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00d9ff,
+            transparent: true,
+            opacity: 0.25,
+            side: THREE.DoubleSide
+        });
+
+        this.regionFill = new THREE.Mesh(geometry, material);
+        this.regionFill.position.z = 0.005; // Slightly in front of grid
+        this.regionFill.userData.isVisualization = true;
+        this.sceneManager.scene.add(this.regionFill);
+    }
+
+    /**
+     * Create a transparent 2D region fill for washer method (area between two curves)
+     */
+    createWasherRegion(fn1, fn2, a, b, axisOffset) {
+        const shape = new THREE.Shape();
+        const steps = 100;
+        const dx = (b - a) / steps;
+
+        // Trace along the outer curve (fn1)
+        shape.moveTo(a, fn1(a));
+        for (let i = 1; i <= steps; i++) {
+            const x = a + i * dx;
+            shape.lineTo(x, fn1(x));
+        }
+
+        // Trace back along the inner curve (fn2) in reverse
+        for (let i = steps; i >= 0; i--) {
+            const x = a + i * dx;
+            shape.lineTo(x, fn2(x));
+        }
+
+        shape.closePath();
+
+        const geometry = new THREE.ShapeGeometry(shape);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00ffaa,
+            transparent: true,
+            opacity: 0.25,
+            side: THREE.DoubleSide
+        });
+
+        this.regionFill = new THREE.Mesh(geometry, material);
+        this.regionFill.position.z = 0.005;
+        this.regionFill.userData.isVisualization = true;
+        this.sceneManager.scene.add(this.regionFill);
     }
 
     /**
@@ -198,7 +282,9 @@ export class DiskWasherVisualizer {
         innerPoints.push(new THREE.Vector2(0, b));
 
         const innerGeometry = new THREE.LatheGeometry(innerPoints, 64);
-        innerGeometry.rotateZ(Math.PI / 2);
+        // Apply same rotation fix as outer solid
+        innerGeometry.rotateZ(-Math.PI / 2);
+        innerGeometry.rotateX(Math.PI);
 
         if (axisOffset !== 0) {
             innerGeometry.translate(0, axisOffset, 0);
@@ -320,6 +406,11 @@ export class DiskWasherVisualizer {
         const r = Math.abs(y - axisOffset);
         const halfDx = dx * 0.45;
 
+        // Store annotation position for animation
+        this.annotationX = x;
+        this.annotationY = y;
+        this.annotationHalfDx = halfDx;
+
         // Draw the representative rectangle that gets rotated
         const rectPoints = [
             new THREE.Vector3(x - halfDx, axisOffset, 0.01),
@@ -363,8 +454,17 @@ export class DiskWasherVisualizer {
         );
         this.annotations.push(radiusLine);
 
-        // Radius label
-        const radiusLabel = this.createTextSprite(`r = ${example.fnLatex.split('=')[1].trim()}`,
+        // Radius label - account for axis offset
+        let radiusText;
+        const fnPart = example.fnLatex.split('=')[1].trim();
+        if (axisOffset === 0) {
+            radiusText = `r = ${fnPart}`;
+        } else if (axisOffset < 0) {
+            radiusText = `r = ${fnPart} + ${Math.abs(axisOffset)}`;
+        } else {
+            radiusText = `r = ${fnPart} - ${axisOffset}`;
+        }
+        const radiusLabel = this.createTextSprite(radiusText,
             new THREE.Vector3(x + halfDx + 0.6, (axisOffset + y) / 2, 0.1), 0xffff00);
         this.annotations.push(radiusLabel);
 
@@ -379,6 +479,8 @@ export class DiskWasherVisualizer {
         const dxLabel = this.createTextSprite('Δx', new THREE.Vector3(x, y + 0.4, 0.1), 0xff8800);
         this.annotations.push(dxLabel);
 
+        // Store data for animation (needed even if sample slice isn't shown)
+        this.sampleData = { x, r, dx, axisOffset, type: 'disk' };
     }
 
     /**
@@ -393,6 +495,12 @@ export class DiskWasherVisualizer {
         const outerY = Math.max(y1, y2);
         const innerY = Math.min(y1, y2);
         const halfDx = dx * 0.45;
+
+        // Store annotation position for animation
+        this.annotationX = x;
+        this.annotationOuterY = outerY;
+        this.annotationInnerY = innerY;
+        this.annotationHalfDx = halfDx;
 
         // Draw the representative rectangle (the region between curves)
         const rectPoints = [
@@ -464,6 +572,10 @@ export class DiskWasherVisualizer {
         const dxLabel = this.createTextSprite('Δx', new THREE.Vector3(x, outerY + 0.4, 0.1), 0xff8800);
         this.annotations.push(dxLabel);
 
+        // Store data for animation (needed even if sample slice isn't shown)
+        const outerR = Math.abs(outerY - axisOffset);
+        const innerR = Math.abs(innerY - axisOffset);
+        this.sampleData = { x, outerR, innerR, dx, axisOffset, type: 'washer' };
     }
 
     /**
@@ -586,6 +698,14 @@ export class DiskWasherVisualizer {
         }
         this.sampleData = null;
 
+        // Clear region fill
+        if (this.regionFill) {
+            this.regionFill.geometry.dispose();
+            this.regionFill.material.dispose();
+            this.sceneManager.scene.remove(this.regionFill);
+            this.regionFill = null;
+        }
+
         // Clear all visualization objects
         this.sceneManager.clearVisualization();
     }
@@ -705,14 +825,17 @@ export class DiskWasherVisualizer {
         animRect.material.opacity = 0.6;
         group.add(animRect);
 
-        // Position group at the axis of rotation
+        // Position group at the axis of rotation (along the x-axis at y = axisOffset)
+        // The rotation axis is the x-axis (or line y = axisOffset)
         group.position.set(x, axisOffset, 0);
-        animRect.position.set(0, -axisOffset, 0);
+        // Offset the rectangle so its geometry (which has world coordinates baked in)
+        // ends up in the correct position relative to the group
+        animRect.position.set(-x, -axisOffset, 0.01);
 
         this.sceneManager.scene.add(group);
         this.sampleRectGroup = group;
 
-        // Animate rotation
+        // Animate rotation around X axis (perpendicular to YZ plane)
         const duration = 1500;
         const startTime = Date.now();
 

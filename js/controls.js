@@ -16,6 +16,7 @@ export class ControlPanel {
             showSolid: false,
             showSlices: false,
             showDimensions: true,
+            showRegion: true,
             showSampleSlice: false,
             animating: false,
             animationSpeed: 500
@@ -42,10 +43,7 @@ export class ControlPanel {
             .name('Example')
             .onChange((value) => this.onExampleChange(value));
 
-        // Method selector (will be updated based on example)
-        this.methodController = this.gui.add(this.settings, 'method', ['disk', 'washer', 'shell'])
-            .name('Method')
-            .onChange(() => this.onSettingsChange());
+        // Method is determined by example, no dropdown needed
 
         // Slices folder
         const slicesFolder = this.gui.addFolder('Visualization');
@@ -54,22 +52,26 @@ export class ControlPanel {
             .name('Number of Slices')
             .onChange(() => this.onSettingsChange());
 
-        slicesFolder.add(this.settings, 'showSolid')
+        this.showSolidController = slicesFolder.add(this.settings, 'showSolid')
             .name('Show Solid')
             .onChange(() => this.onSettingsChange());
 
-        slicesFolder.add(this.settings, 'showSlices')
+        this.showSlicesController = slicesFolder.add(this.settings, 'showSlices')
             .name('Show Slices')
             .onChange(() => this.onSettingsChange());
 
-        slicesFolder.add(this.settings, 'showDimensions')
+        this.showDimensionsController = slicesFolder.add(this.settings, 'showDimensions')
             .name('Show Dimensions')
+            .onChange(() => this.onSettingsChange());
+
+        this.showRegionController = slicesFolder.add(this.settings, 'showRegion')
+            .name('Show Region')
             .onChange(() => this.onSettingsChange());
 
         // Sample slice folder
         const sampleFolder = this.gui.addFolder('Sample Slice Demo');
 
-        sampleFolder.add(this.settings, 'showSampleSlice')
+        this.showSampleSliceController = sampleFolder.add(this.settings, 'showSampleSlice')
             .name('Show Sample Slice')
             .onChange(() => this.onSettingsChange());
 
@@ -94,9 +96,6 @@ export class ControlPanel {
                     this.startAnimation();
                 }
             });
-
-        // Initialize with first example
-        this.updateMethodOptions(examples[0]);
     }
 
     /**
@@ -106,24 +105,10 @@ export class ControlPanel {
         const example = getExampleById(exampleId);
         if (!example) return;
 
-        this.updateMethodOptions(example);
+        // Set method from example (method is locked to example)
         this.settings.method = example.method;
 
-        // Update method controller
-        this.methodController.setValue(example.method);
-
         this.onSettingsChange();
-    }
-
-    /**
-     * Update available methods based on example
-     */
-    updateMethodOptions(example) {
-        // All examples have a preferred method, but we can allow switching
-        // between compatible methods
-
-        // For simplicity, we'll keep the method fixed to what the example specifies
-        // since disk/washer vs shell require different handling
     }
 
     /**
@@ -158,6 +143,16 @@ export class ControlPanel {
      * Start slice animation
      */
     startAnimation() {
+        // Enable slices for animation if not already shown
+        if (!this.settings.showSlices) {
+            this.settings.showSlices = true;
+            this.showSlicesController.updateDisplay();
+            // Rebuild visualization with slices
+            if (this.app && this.app.updateVisualization) {
+                this.app.updateVisualization(this.getSettings());
+            }
+        }
+
         let currentIndex = 0;
         const maxIndex = this.settings.numSlices;
 
@@ -190,8 +185,8 @@ export class ControlPanel {
             this.animationInterval = null;
         }
 
-        // Show all slices
-        if (this.app && this.app.showAllSlices) {
+        // Show all slices since showSlices is now true
+        if (this.settings.showSlices && this.app && this.app.showAllSlices) {
             this.app.showAllSlices();
         }
     }
@@ -208,6 +203,7 @@ export class ControlPanel {
             showSolid: this.settings.showSolid,
             showSlices: this.settings.showSlices,
             showDimensions: this.settings.showDimensions,
+            showRegion: this.settings.showRegion,
             showSampleSlice: this.settings.showSampleSlice
         };
     }
@@ -224,9 +220,25 @@ export class ControlPanel {
                 this.rotationAnimating = false;
                 // After animation, show the sample slice
                 this.settings.showSampleSlice = true;
+                // Update the controller display to reflect the new state
+                if (this.showSampleSliceController) {
+                    this.showSampleSliceController.updateDisplay();
+                }
                 this.onSettingsChange();
             });
         }
+    }
+
+    /**
+     * Update all controller displays to match current settings
+     */
+    updateAllDisplays() {
+        if (this.showSolidController) this.showSolidController.updateDisplay();
+        if (this.showSlicesController) this.showSlicesController.updateDisplay();
+        if (this.showDimensionsController) this.showDimensionsController.updateDisplay();
+        if (this.showRegionController) this.showRegionController.updateDisplay();
+        if (this.showSampleSliceController) this.showSampleSliceController.updateDisplay();
+        if (this.playController) this.playController.updateDisplay();
     }
 
     /**

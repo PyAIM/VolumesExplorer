@@ -14,6 +14,7 @@ export class ShellVisualizer {
         this.sampleSlice = null;
         this.sampleRectGroup = null;
         this.sampleData = null;
+        this.regionFill = null; // 2D region being rotated
     }
 
     /**
@@ -26,13 +27,18 @@ export class ShellVisualizer {
 
         const { fn, interval, axisOffset } = example;
         const [a, b] = interval;
-        const { numSlices, showSolid, showSlices, showDimensions } = options;
+        const { numSlices, showSolid, showSlices, showDimensions, showRegion } = options;
 
         // Show the rotation axis
         this.sceneManager.showRotationAxis(example.axisOfRotation, axisOffset);
 
         // Create the 2D curve
         this.createCurve(fn, a, b, axisOffset);
+
+        // Create the transparent region fill (2D area being rotated)
+        if (showRegion) {
+            this.createShellRegion(fn, a, b, axisOffset);
+        }
 
         // Create the solid of revolution
         if (showSolid) {
@@ -99,6 +105,42 @@ export class ShellVisualizer {
             this.curveLines.push(line);
             this.sceneManager.scene.add(line);
         });
+    }
+
+    /**
+     * Create a transparent 2D region fill for shell method (area under curve to x-axis)
+     */
+    createShellRegion(fn, a, b, axisOffset) {
+        const shape = new THREE.Shape();
+        const steps = 100;
+        const dx = (b - a) / steps;
+
+        // Start at bottom-left corner (on x-axis)
+        shape.moveTo(a, 0);
+
+        // Trace along the curve
+        for (let i = 0; i <= steps; i++) {
+            const x = a + i * dx;
+            const y = fn(x);
+            shape.lineTo(x, y);
+        }
+
+        // Close back to the x-axis
+        shape.lineTo(b, 0);
+        shape.closePath();
+
+        const geometry = new THREE.ShapeGeometry(shape);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x00ff88,
+            transparent: true,
+            opacity: 0.25,
+            side: THREE.DoubleSide
+        });
+
+        this.regionFill = new THREE.Mesh(geometry, material);
+        this.regionFill.position.z = 0.005; // Slightly in front of grid
+        this.regionFill.userData.isVisualization = true;
+        this.sceneManager.scene.add(this.regionFill);
     }
 
     /**
@@ -234,6 +276,11 @@ export class ShellVisualizer {
         const r = Math.abs(x - axisOffset);
         const halfDx = dx * 0.45;
 
+        // Store annotation position for animation
+        this.annotationX = x;
+        this.annotationH = h;
+        this.annotationHalfDx = halfDx;
+
         // Draw the representative rectangle that gets rotated into a shell
         const rectPoints = [
             new THREE.Vector3(x - halfDx, 0, 0.01),
@@ -307,6 +354,8 @@ export class ShellVisualizer {
         const dxLabel = this.createTextSprite('Δx', new THREE.Vector3(x, h + 0.4, 0.1), 0xff8800);
         this.annotations.push(dxLabel);
 
+        // Store data for animation (needed even if sample slice isn't shown)
+        this.sampleData = { x, h, r, dx, axisOffset, type: 'shell' };
     }
 
     /**
@@ -429,6 +478,14 @@ export class ShellVisualizer {
         }
         this.sampleData = null;
 
+        // Clear region fill
+        if (this.regionFill) {
+            this.regionFill.geometry.dispose();
+            this.regionFill.material.dispose();
+            this.sceneManager.scene.remove(this.regionFill);
+            this.regionFill = null;
+        }
+
         // Clear all visualization objects
         this.sceneManager.clearVisualization();
     }
@@ -511,7 +568,7 @@ export class ShellVisualizer {
 
         // Create a group for the rotation animation
         const group = new THREE.Group();
-        const { axisOffset } = this.sampleData;
+        const { x, axisOffset } = this.sampleData;
 
         // Clone the rectangle fill for animation
         const animRect = rectFill.clone();
@@ -519,9 +576,11 @@ export class ShellVisualizer {
         animRect.material.opacity = 0.6;
         group.add(animRect);
 
-        // Position group at the y-axis (or x = axisOffset)
+        // Position group at the axis of rotation (y-axis or line x = axisOffset)
         group.position.set(axisOffset, 0, 0);
-        animRect.position.set(-axisOffset, 0, 0);
+        // Offset the rectangle so its geometry (which has world coordinates baked in)
+        // ends up in the correct position relative to the group
+        animRect.position.set(-axisOffset, 0, 0.01);
 
         this.sceneManager.scene.add(group);
         this.sampleRectGroup = group;

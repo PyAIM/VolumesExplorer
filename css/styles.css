@@ -88,7 +88,7 @@ body {
     margin-top: 10px;
     overflow: hidden;
     transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin-top 0.3s ease-out;
-    max-height: 500px;
+    max-height: 800px;
     opacity: 1;
 }
 
