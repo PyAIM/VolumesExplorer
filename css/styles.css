@@ -468,3 +468,231 @@ body {
 .animation-folder .controller {
     border-left: 2px solid #e94560;
 }
+
+/* ============================================
+   Responsive Design - Laptop / Smaller Screens
+   ============================================ */
+
+/* Laptops and smaller desktops: prevent header panel from covering controls */
+@media (max-height: 750px) {
+    #header-panel {
+        top: 10px;
+        left: 10px;
+        max-width: 280px;
+    }
+
+    #header-panel h1 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+
+    #instructions {
+        padding: 10px;
+    }
+
+    #instructions ul {
+        font-size: 0.78rem;
+        line-height: 1.4;
+    }
+
+    #instructions-content h3 {
+        margin: 8px 0 5px 0;
+        font-size: 0.85rem;
+    }
+
+    #info-panel {
+        bottom: 10px;
+        left: 10px;
+        padding: 12px;
+        max-width: 340px;
+    }
+}
+
+/* Very short screens: auto-collapse instructions on load */
+@media (max-height: 600px) {
+    #header-panel {
+        max-width: 250px;
+    }
+
+    #header-panel h1 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+    }
+
+    #info-panel {
+        max-width: 300px;
+    }
+}
+
+/* ============================================
+   Responsive Design - Tablet
+   ============================================ */
+@media (max-width: 900px) {
+    .lil-gui {
+        --width: 280px !important;
+    }
+
+    #header-panel {
+        max-width: 280px;
+    }
+
+    #info-panel {
+        max-width: 340px;
+    }
+}
+
+/* ============================================
+   Responsive Design - Mobile
+   ============================================ */
+@media (max-width: 600px) {
+    body {
+        overflow: auto;
+    }
+
+    #container {
+        width: 100vw;
+        min-height: 100vh;
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    #canvas {
+        position: relative;
+        width: 100%;
+        height: 60vh;
+        min-height: 300px;
+        z-index: 1;
+    }
+
+    #header-panel {
+        position: relative;
+        top: auto;
+        left: auto;
+        max-width: 100%;
+        order: -1;
+        padding: 10px 12px;
+        z-index: 10;
+        background: rgba(22, 33, 62, 0.95);
+    }
+
+    #header-panel h1 {
+        font-size: 1rem;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    #instructions {
+        padding: 10px;
+    }
+
+    #instructions ul {
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+
+    #info-panel {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        max-width: 100%;
+        width: 100%;
+        border-radius: 0;
+        padding: 12px;
+        z-index: 10;
+    }
+
+    #info-header h2 {
+        font-size: 1.05rem;
+    }
+
+    #copyright {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        text-align: center;
+        padding: 12px;
+        color: #999;
+        font-size: 0.85rem;
+        background: rgba(22, 33, 62, 0.95);
+    }
+
+    .lil-gui {
+        --width: 260px !important;
+    }
+
+    /* Modal adjustments for mobile */
+    .modal {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    .modal-header {
+        padding: 12px 16px;
+    }
+
+    .modal-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .modal-content {
+        padding: 16px;
+        max-height: calc(90vh - 60px);
+    }
+
+    .modal-content .formula-box {
+        font-size: 0.95rem;
+        padding: 10px 14px;
+    }
+
+    .modal-content .step {
+        padding: 10px;
+    }
+}
+
+/* Mobile landscape */
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+    #canvas {
+        height: 100vh;
+        min-height: 100vh;
+    }
+
+    #container {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    #header-panel {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        max-width: 220px;
+        padding: 5px 8px;
+        background: rgba(22, 33, 62, 0.9);
+    }
+
+    #header-panel h1 {
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+        text-align: left;
+    }
+
+    #info-panel {
+        position: absolute;
+        bottom: 5px;
+        left: 5px;
+        max-width: 280px;
+        padding: 8px;
+    }
+
+    #copyright {
+        position: absolute;
+        bottom: 5px;
+        right: 10px;
+        text-align: right;
+        padding: 0;
+        background: transparent;
+        color: #999;
+    }
+}

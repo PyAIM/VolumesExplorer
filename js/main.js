@@ -62,6 +62,9 @@ class VolumesApp {
         // Set up instructions toggle
         this.setupInstructionsToggle();
 
+        // Auto-collapse instructions on small screens to save space
+        this.handleResponsiveLayout();
+
         // Start with first example
         this.updateVisualization(this.controls.getSettings());
 
@@ -89,6 +92,24 @@ class VolumesApp {
             this.infoToggle.textContent = isCollapsed ? '+' : '−';
             this.infoToggle.title = isCollapsed ? 'Show volume info' : 'Hide volume info';
         });
+    }
+
+    /**
+     * Handle responsive layout adjustments
+     */
+    handleResponsiveLayout() {
+        const collapse = () => {
+            // Auto-collapse instructions on small screens
+            if (window.innerHeight < 700 || window.innerWidth < 600) {
+                if (!this.instructionsContent.classList.contains('collapsed')) {
+                    this.instructionsContent.classList.add('collapsed');
+                    this.instructionsToggle.textContent = '+';
+                    this.instructionsToggle.title = 'Show instructions';
+                }
+            }
+        };
+        collapse();
+        window.addEventListener('resize', collapse);
     }
 
     /**

@@ -38,7 +38,7 @@ export class SceneManager {
             canvas: this.canvas,
             antialias: true
         });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight, false);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         // Create orbit controls
@@ -245,9 +245,11 @@ export class SceneManager {
     }
 
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(width, height, false);
     }
 
     update() {
